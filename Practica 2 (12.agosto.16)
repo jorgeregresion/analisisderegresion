@@ -1,0 +1,33 @@
+###PRACTICA2
+##limpiar variable ls
+rm(list = ls())
+
+#definir directorio raiz
+require (foreign)
+
+setwd("C://Users//SALA-C4//Desktop")
+SDEMT215 <- data.frame(read.dbf("SDEMT215.dbf"))
+
+View(SDEMT215)
+install.packages("questionr")
+require(questionr)
+wtd.table(SDEMT215$POS_OCU)
+#VALORES PERDIDOS
+wtd.table(SDEMT215$POS_OCU,na.show = TRUE)
+
+#1.2 FRECUENCIAS CON DATOS PONDERADOS
+wtd.table(SDEMT215$POS_OCU, weights=SDEMT215$FAC, na.show = TRUE)
+
+#2.1 TABULADOS CON DATOS MUESTRALES (SIN PONDERAR)
+#Método 1
+wtd.table(SDEMT215$SEX,SDEMT215$POS_OCU)
+
+#2.2 TABULADOS CON DATOS PONDERADOS
+wtd.table(SDEMT215$SEX, SDEMT215$POS_OCU, weights=SDEMT215$FAC)
+
+###EJERCICIO
+#1) Obtener la frecuencia de la variable clase1 (muestral)
+#2) Obtener el tabulado de entidad y sexo (muestral y ponderado)
+
+
+wtd.table(SDEMT215$ENT, SDEMT215$SEX, weights=SDEMT215$FAC)
