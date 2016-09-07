@@ -1,0 +1,46 @@
+##Queremos comprobar la hipotesis que entre mayor ingreso de la familia
+##Hay una mayor estatura de los niñxs
+
+
+###Paso 1: Hacer diagrama de dispersión
+
+estaturas <- c(1.2, 1.23, 1.19, 1.32, 1.28, 1.22, 1.17, 1.29, 1.33, 1.15)
+neco <- c(110, 130, 108, 167, 156, 115, 104, 138, 170, 107)
+plot(neco, estaturas, pch=10, xlab="Ingreso económico", ylab="Estatura", main="Grafica de dispersión", col="purple")
+
+###Paso 2: Ver correlaciones
+
+#La forma general de cor() es:
+###Argumentos
+##1)Var dependiente
+##2)Var independiente
+##3)Método de correlación
+cor(estaturas, neco, method="pearson")
+
+###Paso 3: Realizar prueba de correlación con la función cor.test()
+#La prueba de hipotesis para esta función es Ho=r=0, es decir, no hay relación
+#Ha != 0 -> si hay relación
+#Misma logica que cor()
+
+cor.test (estaturas, neco, method="pearson")
+
+#Si p-value es menos a .05 NO aceptamos Ho, por lo que si existe relacion
+
+###Paso 4: Ya que confirmamos la correlacion aplicamos el modelo.
+#Para aplicar el modelo se utiliza la funcion lm() ~lineal model~
+
+mod1 <- lm(estaturas~neco)
+summary (mod1)
+
+#Los residuales nos generan las diferencias entre los valores ajustados y los reales
+#En los resultados tenemos los coeficientes que contienen 
+
+plot(neco, estaturas, pch=10, xlab="Ingreso económico", ylab="Estatura", main="Grafica de dispersión", col="purple")
+
+
+###abline()  Grafica la recta del mod1 en la grafica de dispersion de las variables en estudio
+abline(mod1)
+names(mod1)
+
+###Con esto podriamos decir que tenemos una ecuación:
+estaturas =.9323+.0023 neco
