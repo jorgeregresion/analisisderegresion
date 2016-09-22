@@ -1,0 +1,73 @@
+install.packages("car")
+require(car)
+
+estaturas <- c(1.2, 1.23, 1.19, 1.32, 1.28, 1.22, 1.17, 1.29, 1.33, 1.15)
+neco <- c(110, 130, 108, 167, 156, 115, 104, 138, 170, 107)
+plot(neco, estaturas, pch=10, xlab="Ingreso económico", ylab="Estatura", main="Grafica de dispersión", col="purple")
+mod1 <- lm(estaturas~neco)
+summary (mod1)
+base1 <- data.frame(neco, estaturas)
+base1$ajuste.mod1 <- fitted(mod1) ##Valores ajustados
+base1$residuales.mod1 <- residuals(mod1) ##Residuos del modelo
+base1$rstudent.mod1 <- rstudent(mod1) ##Residuos estudentizados
+View(base1)
+
+
+##Estas variables se utilizan para comprobar los supuestos
+
+####SUPUESTO DE NORMALIDAD
+##Para esta prueba se utiliza la prueba de Shapiro para analizar los residuos
+
+shapiro.test(base1$rstudent.mod1)
+#Prueba de hipotesis shapiro test
+#Ho. la muestra tiene una dist normal
+#Ha. la muestra no tiene dist normal
+#Como p-value=.8172 no se rechaza la hipótesis nula -> hay normalidad
+#Ver el resultado en un grafico:
+
+qqnorm (base1$rstudent.mod1, main = "Normal(0,1)")
+#Se obtiene grafico de dispersión con la normal 0,1
+qqline (base1$rstudent.mod1)
+
+#####Revisar la homogeneidad de varianzas
+#Para realizar esta prueba se requiere una libreria llamada lmtest
+#Ya que se tiene que aplicar la prueba de Breusch
+
+install.packages("lmtest")
+require(lmtest)
+bptest(mod1)
+
+#Con esta prueba esperamos que haya homogeneidad en la varianza
+#Ho: si hay homogeneidad en las varianzas
+#Ha: no hay homogeneidad en las varianzas
+#Como p-value=.6108 no se rechaza la hipótesis nula -> hay homogeneidad en la varianza
+
+####PRUEBA DE AUTOCORRELACION
+#En este caso se utiliza la prueba de Durbin Watson
+
+dwtest(mod1, alternative = "two.sided")
+#Ho: no hay autocorrelación en los residuos
+#Ha: si hay autocorrelación en los residuos
+#Como p-value=.9142 no se rechaza la hipótesis nula -> no hay autocorrelación en los residuos
+
+#Otra forma de evaluar esta prueba es con el valor de Durbin Watson
+#Se espera que este valor este en el rango de 1.5 a 2.5
+#Si el valor esta dentro de este rango -> no hay autocorrelación en los residuos
+
+#Comprobarlo de manera grafica:
+plot(base1$residuales.mod1, pch=2, ylab="residuales", xlab="in")
+abline(h=cor(base1$estaturas, base1$neco))
+#Se puede observar que hay una grafica sin algun patron
+#Entonces se confirma que no hay autocorrelación en los residuos
+
+
+#podriamos tener un problema de rangos si predecimos sin considerar rangos de nuestra variable
+#Por lo que definiremos una nueva base con limites
+
+limbase1 <- seq(min(base1$neco), max(base1$neco), length=10)
+limbase1 <- data.frame(limbase1)
+limbasep <- predict.lm(mod1, limbase1, interval = "prediction", se.fit=TRUE, data=base1)
+
+head(limbasep$fit) #Genera los limites
+#Dibujar limites
+matplot(limbase1, limbasep$fit, type="l", xlab="ingreso", ylab="estatura")
