@@ -1,0 +1,128 @@
+######MODELO DE REGRESION LINEAL MULTIPLE######
+
+capa <-c(4330, 5500, 5500, 4700, 5200, 5500, 4700, 5500, 5800, 5000)  #Independiente (x2)
+calidad <- c(2, 3, 4, 3, 4, 4, 4, 5, 5, 5) #Independiente (x1)
+precio <- c(190, 219, 249, 249, 250, 340, 289, 395, 439, 525) #Dependiente (y)
+mochil <- data.frame(precio, capa, calidad)
+
+###Primero aplicamos correlación:
+cor(mochil, use="everything", method="pearson")
+#Observamos que las variables tienen correlaciones diversas
+
+###Aplicamos modelo:
+modmo <- lm(precio~calidad+capa)
+summary(modmo)
+
+#Se revisa la R2 ajustada por ser un modelo de RLM tenemos:
+#Una R2 ajustada de .70 lo que implica que la recta de regresión
+#explica un 70% la variabilidad del modelo
+#Revisando el valor F y p-value tenemos que si cumple con los criterios de buen ajuste
+#(F>1 y P-VALUE<.05)
+#Con estos datos podemos mencionar que estamos ante un buen modelo de regresión
+#por lo que se pasa al diagnostico.
+#El diagnostico se realiza para poder generalizar los resultados del modelo
+#a partir de la revisión de los supuestos
+
+#Lo primero que se hace en un modelo de RLM es observar graficamente los supuestos
+
+#SUPUESTO 1
+#1.- Se contrastan los valores residuales vs. los valores ajustados:
+#	Se realiza con la función plot y el argumento which=1
+plot(modmo, which=1, pch=5)
+#Con esto esperamos que los residuales se distribuyan sin algun patron
+#Una tendencia en la variabilidad de los residuos sugiere que 
+#la varianza esta relacionada con la media, violando el supuesto de varianza constante
+
+#SUPUESTO 2, DE NORMALIDAD
+plot(modmo, which=2, pch=5)
+#En este caso esperamos que los residuos tipificados se encuentren alrededor de la línea
+#Se observa que si hay distribución normal
+
+#SUPUESTO 3
+#Los residuos estan estandarizados por sus desviaciones estandar estimadas
+plot(modmo, which=3, pch=5)
+#Aqui podemos ver si los residuos de distribuyen constantes en los valores ajustados
+
+#SUPUESTO 4
+plot(modmo, which=5, pch=5)
+#Expone la importancia de cada observación en el modelo
+#en esta distancia el grafico nos muestra las observaciones que podran impactar en el modelo
+#por lo que se sugiere eliminarlas
+
+#####
+#Quitar observaciones 1, 7 y 10
+mochil1 <- mochil[c(-1, -7, -10),]
+cor(mochil1, use="everything", method="pearson")
+modmo1 <- lm(mochil1$precio~mochil1$preciocalidad+mochil1$preciocapa)
+summary(modmo1)
+#####
+
+
+#Después de que se analiza graficamente se realizan pruebas para confirmar
+#que el modelo de RLM si cumple con los supuestos.
+#Para aplicar estas pruebas se generan: valores ajustados, residuales y estandarizados.
+
+##función fitted(): Obtener valores ajustador de un modelo
+mochil$ajustados <- fitted(modmo)
+mochil$residuales <- residuals(modmo)
+mochil$rstud <- rstudent(modmo)
+
+###PRUEBA 1, DE NORMALIDAD
+#Necesitamos paquetería lmtest
+#Se realiza con la función ks.test
+install.packages("lmtest")
+require(lmtest)
+ks.test(mochil$rstud, "pnorm")
+#Se plantea una prueba de hipotesis y se espera un p-value>.05
+#Si p-value>.05 no se rechaza Ho -> se acepta que hay normalidad
+#	En este caso el modelo pasa la prueba de normalidad
+
+###PRUEBA 2, DE HOMOGENEIDAD DE VARIANZAS
+#Se realiza con la función bptest
+bptest(modmo, studentize=FALSE, data=mochil)
+#Como p-value>.05 -> pasa la prueba de homogeneidad de varianzas
+
+###PRUEBA 3, DE AUTOCORRELACIÓN
+#Llamada también prueba de Durbin Watson, función: dwtest()
+dwtest(modmo, alternative="two.sided", data=mochil)
+#En esta prueba hay dos formas para comprobar 
+#1) p-value>.05
+#2) Valor de Durbin Watson (rango aceptable: 1.5 a 2.5)
+
+#Hasta aquí podríamos confirmar que no hay correlación entre los residuos
+#Con estas pruebas confirmamos que tenemos un modelo con buen ajuste
+#Sin embargo hay que revisar los casos atípicos
+#Para revisar estos casos se usa la libreria car
+
+install.packages("car")
+require(car)
+outlierTest(modmo)
+outlier.test(modmo)
+
+#Una vez que observamos los casos atípicos procedemos a conocer su influencia en el modelo
+#Para observar su influencia se utiliza la función: influence.measures()
+influ <- influence.measures(modmo)
+summary(influ)
+
+#En la primer columna observamos que los casos con mayor influencia en el modelo son 1, 2 y 10
+#Las columnas que hacen referencia a dfb nos indican la influencia en los coeficientes del modelo
+#Las columnas que nos interesan más son cook.d y hat ya que nos exponen con mayor claridad la influencia.
+#cook.d es la distancia de cook y entre más cercano a 1 -> mayor influencia de la observación
+#En este caso la observación 10 es la que presenta mayor distancia de cook
+#Si este valor es mayor a 1 -> hay certeza de su influencia en el modelo
+#hat se asocia con las medidas de leverage que varían entre 0 y 1. 
+#Entre más cercano a 1 -> mayor influencia
+
+#Además de estas pruebas se hace el análisis gráfico de los casos influyentes.
+#Para este análisis tenemos la función:influencepot()
+influencePlot(modmo)
+#El análisis de este grafico se realiza con base en el tamaño de las circunferencias que arroja
+#es decir, a mayor circunferencia -> mayor influencia
+
+#Grafica de distancia de cook, se requiere la libreria faraway
+install.packages("faraway")
+require(faraway)
+cooks.distance(modmo)
+dc <- cooks.distance(modmo)
+etiqueta <- rownames(mochil)
+halfnorm(dc, etiqueta)
