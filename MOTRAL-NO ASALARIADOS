@@ -1,0 +1,72 @@
+install.packages("foreign")
+require(foreign)
+install.packages("questionr")
+require(questionr)
+
+setwd("C://Users//Dulce Ivon//Desktop//MOTRAL")
+cuest<-data.frame(read.dbf("motral2012_cuestionario.dbf"))
+empleo<-data.frame(read.dbf("motral2012_empleos.dbf"))
+
+#pegar bases
+folio<-paste(cuest$CD_A, cuest$ENT, cuest$CON, cuest$V_SEL, cuest$N_HOG, cuest$H_MUD, cuest$N_REN)
+x<-data.frame(cuest, folio)
+
+folio<-paste(empleo$CD_A, empleo$ENT, empleo$CON, empleo$V_SEL, empleo$N_HOG, empleo$H_MUD, empleo$N_REN)
+y<-data.frame(empleo, folio)
+
+motral<-merge(x, y, by="folio", all.x=T, all.y=T)
+
+#Población objetivo: NO ASALARIADOS
+motral1<-subset(motral, motral$P5==2 | motral$P5==3 | motral$P5==4)
+wtd.table(motral1$SEX, weights=motral1$FAC)
+#1		   2
+#4283381	3595966
+
+#Precodificar
+#	1)Grupos de edad (18-19, 20-29, 30-39, 40-49, 50 y +)
+#	2)Sexo(Masculino, Femenino)
+#	3)Condición de actividad (Asalariados y No Asalariados)
+
+#1) Grupos de edad
+motral1$EDA<-as.character(motral1$EDA)
+class(motral1$EDA)
+motral1$EDAD[as.numeric(motral1$EDA)>=18 & as.numeric(motral1$EDA)<=19] <-1
+motral1$EDAD[as.numeric(motral1$EDA)>=20 & as.numeric(motral1$EDA)<=29] <-2
+motral1$EDAD[as.numeric(motral1$EDA)>=30 & as.numeric(motral1$EDA)<=39] <-3
+motral1$EDAD[as.numeric(motral1$EDA)>=40 & as.numeric(motral1$EDA)<=49] <-4
+motral1$EDAD[as.numeric(motral1$EDA)>=50] <-5
+motral1$EDAD<-as.character(motral1$EDAD)
+table(motral1$EDAD, motral1$EDA)
+
+#2) Sexo
+table(motral1$SEX)
+
+#3) Condición de Actividad 
+class(motral1$P5)
+table(motral1$P5)
+
+class(motral1$P13)
+motral1$P13<-as.numeric(as.character(motral1$P13))
+
+require(nnet)
+mod1<-multinom(P13~1, data=motral1, trace=FALSE)
+summary(mod1)
+#AIC=2669.844
+
+modfin<-multinom(P13~SEX+EDAD, data=motral1)
+summary(modfin)
+#AIC=2627.032
+
+w<-summary(modfin, cor=F, Wald=T)
+print(w)
+table(motral1$EDAD)
+
+install.packages("stargazer")
+require(stargazer)
+s<-stargazer(modfin, type='text', title= "Coefficients, summary=T")
+
+CONCLUSIONES:
+Del grupo de no asalariados las personas que se encuentran en el grupo de 40 a 49 años son 2.15 veces más probable que ahorren que los que se encuentran en el grupo de 18 a 19
+Del grupo de no asalariados las personas que se encuentran en el grupo de mayores de 50 años son 2.54 veces más probable que ahorren que los que se encuentran en el grupo de 18 a 19.
+Del grupo de no asalariados las personas que se encuentran en el grupo de trabajadores por su propia cuenta son 2.31 veces más probable que ahorren que los que se encuentran en el grupo de patrón o empleador.
+Del grupo de no asalariados las personas que se encuentran en el grupo de trabajador sin pago son 2.32 veces más probable que ahorren que los que se encuentran en el grupo de patrón o empleador.
